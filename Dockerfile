@@ -35,6 +35,18 @@ RUN echo "startkde" > /etc/xrdp/startwm.sh && \
 
 EXPOSE 3389
 
-# Start script
-CMD service xrdp start && \
-    ngrok tcp 3389 --authtoken $NGROK_AUTH_TOKEN --log=stdout
+# Create startup script
+RUN echo '#!/bin/bash\n\
+service xrdp start\n\
+/usr/local/bin/ngrok config add-authtoken 2qiXwqE9lFYqe9NvvpTGZTj7F5h_2Wquuw8qRBApdFBQox56J\n\
+/usr/local/bin/ngrok tcp 3389 --log=stdout &\n\
+echo "Waiting for ngrok to start..."\n\
+sleep 10\n\
+echo "=== RDP SERVER READY ==="\n\
+echo "XRDP is running on port 3389"\n\
+echo "Check Railway logs for ngrok URL"\n\
+echo "========================="\n\
+# Keep container running\n\
+tail -f /dev/null' > /start.sh && chmod +x /start.sh
+
+CMD ["/start.sh"]
