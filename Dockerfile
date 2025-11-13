@@ -70,15 +70,12 @@ if (-NOT (Test-CommandExists "ngrok")) {
 if ($NgrokAuthToken -ne "YOUR_NGROK_AUTH_TOKEN_HERE") {
     Write-Host "Configuring ngrok with your auth token..." -ForegroundColor Yellow
     & ngrok config add-authtoken $NgrokAuthToken
-} else {
-    Write-Host "Please update the NgrokAuthToken in the script with your actual ngrok auth token." -ForegroundColor Red
-    Write-Host "You can get it from: https://dashboard.ngrok.com/get-started/your-authtoken" -ForegroundColor Yellow
 }
 
 # Create Dockerfile for Windows RDP
 Write-Host "Creating Docker configuration..." -ForegroundColor Yellow
 
-$dockerfileContent = @"
+$dockerfileContent = @'
 # Windows RDP Server
 FROM mcr.microsoft.com/windows/servercore:ltsc2022
 
@@ -95,16 +92,16 @@ RUN powershell -Command \
     Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "SecurityLayer" -Value 0
 
 # Create user with password
-RUN net user $Username $Password /add /y && \
-    net localgroup administrators $Username /add
+RUN net user Administrator Darkboy336 /add /y && \
+    net localgroup administrators Administrator /add
 
 # Set never expire password
-RUN wmic useraccount where "name='$Username'" set PasswordExpires=False
+RUN wmic useraccount where "name='Administrator'" set PasswordExpires=False
 
 EXPOSE 3389
 
 CMD ["cmd", "/k", "echo RDP Server is running... && timeout /t 999999"]
-"@
+'@
 
 $dockerfileContent | Out-File -FilePath "Dockerfile" -Encoding ASCII
 
@@ -144,61 +141,7 @@ try {
     Write-Host "Username: $Username" -ForegroundColor Cyan
     Write-Host "Password: $Password" -ForegroundColor Cyan
     Write-Host "`nRDP Connection String:" -ForegroundColor Yellow
-    Write-Host "mstsc /v:$hostname`:$port" -ForegroundColor White
-    
-    # Create connection file
-    $rdpContent = @"
-screen mode id:i:2
-use multimon:i:0
-desktopwidth:i:1024
-desktopheight:i:768
-session bpp:i:32
-winposstr:s:0,1,793,95,1625,768
-compression:i:1
-keyboardhook:i:2
-audiocapturemode:i:0
-videoplaybackmode:i:1
-connection type:i:7
-networkautodetect:i:1
-bandwidthautodetect:i:1
-displayconnectionbar:i:1
-enableworkspacereconnect:i:0
-disable wallpaper:i:0
-allow font smoothing:i:0
-allow desktop composition:i:0
-disable full window drag:i:1
-disable menu anims:i:1
-disable themes:i:0
-disable cursor setting:i:0
-bitmapcachepersistenable:i:1
-full address:s:$hostname`:$port
-audiomode:i:0
-redirectprinters:i:1
-redirectcomports:i:0
-redirectsmartcards:i:1
-redirectwebauthn:i:1
-redirectclipboard:i:1
-redirectposdevices:i:0
-autoreconnection enabled:i:1
-authentication level:i:2
-prompt for credentials:i:0
-negotiate security layer:i:0
-remoteapplicationmode:i:0
-alternate shell:s:
-shell working directory:s:
-gatewayhostname:s:
-gatewayusagemethod:i:4
-gatewaycredentialssource:i:4
-gatewayprofileusagemethod:i:0
-promptcredentialonce:i:0
-use redirection server name:i:0
-rdgiskdcproxy:i:0
-kdcproxyname:s:
-username:s:$Username
-"@
-
-    $rdpContent | Out-File -FilePath "rdp-connection.rdp" -Encoding ASCII
-    Write-Host "`nRDP connection file created: rdp-connection.rdp" -ForegroundColor Green
+    Write-Host "mstsc /v:${hostname}:${port}" -ForegroundColor White
     
 } catch {
     Write-Host "Could not get ngrok URL automatically. Please check ngrok dashboard." -ForegroundColor Red
@@ -206,5 +149,3 @@ username:s:$Username
 }
 
 Write-Host "`nSetup completed! Use the credentials above to connect via RDP." -ForegroundColor Green
-Write-Host "To stop the server: docker stop windows-rdp-container" -ForegroundColor Yellow
-Write-Host "To view ngrok dashboard: http://localhost:4040" -ForegroundColor Yellow
